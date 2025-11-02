@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Any
 from openai import Client
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from bench import init_all_benchmarkers
@@ -75,6 +75,19 @@ class LLMBenchRunner:
         )
         self.bench_history[(api_model_name, dataset_name)] = benchmark_results
         return benchmark_results
+
+    def eval_models(self, requests: List[Dict[str, Any]]) -> List[Dict]:
+        results = []
+        for req in requests:
+            model_type: bytes = req.get("model_type", b"local")
+            match model_type:
+                case b"local":
+                    results.append(self.eval_local_model(**req))
+                case b"api":
+                    results.append(self.eval_api_model(**req))
+                case _:
+                    raise ValueError(f"Unknown model_type: {model_type}")
+        return results
 
 
 def get_llm_bench_runner():
